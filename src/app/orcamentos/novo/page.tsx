@@ -54,6 +54,13 @@ interface OrcamentoData {
   total: number;
 }
 
+function calcularTotal(quantidade: string, valorUnitario: string): string {
+  const qtd = Number(quantidade);
+  const valor = Number(valorUnitario);
+  if (isNaN(qtd) || isNaN(valor)) return "0.00";
+  return (qtd * valor).toFixed(2);
+}
+
 export default function NovoOrcamentoPage() {
   // Cliente
   const [clienteNome, setClienteNome] = useState("");
@@ -67,7 +74,6 @@ export default function NovoOrcamentoPage() {
   // Seleção
   const [partesSelecionadas, setPartesSelecionadas] = useState<string[]>([]);
   const [itens, setItens] = useState<ItemOrcamento[]>([]);
-  const [orcamentoSalvo, setOrcamentoSalvo] = useState<OrcamentoData | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -156,8 +162,7 @@ export default function NovoOrcamentoPage() {
   async function handleSalvar() {
     if (!clienteNome || !itens.length) return alert("Preencha os dados do cliente e adicione pelo menos um trabalho.");
     
-    // Garantir que todos os campos tenham valores válidos
-    const orcamentoData = {
+    const orcamentoData: OrcamentoData = {
       cliente: {
         nome: clienteNome || "",
         morada: clienteMorada || "",
@@ -167,12 +172,12 @@ export default function NovoOrcamentoPage() {
       itens: itens.map(item => ({
         parteId: item.parteId,
         parteNome: partes.find(p => p.id === item.parteId)?.nome || item.parteId,
-        trabalhos: item.trabalhos.map((t: any) => {
-          const original = trabalhos.find((tr: any) => tr.id === t.trabalhoId);
+        trabalhos: item.trabalhos.map(t => {
+          const original = trabalhos.find(tr => tr.id === t.trabalhoId);
           return {
             trabalhoId: t.trabalhoId,
             nome: t.nome || "",
-            descricao: original?.descricao || t.descricao || "",
+            descricao: original?.descricao || "",
             quantidade: t.quantidade || "0",
             unidade: t.unidade || "unid",
             valorUnitario: t.valorUnitario || "0",
@@ -180,13 +185,12 @@ export default function NovoOrcamentoPage() {
         })
       })),
       total: itens.reduce((acc, item) => 
-        acc + item.trabalhos.reduce((s: number, t: any) => 
+        acc + item.trabalhos.reduce((s, t) => 
           s + ((parseFloat(t.quantidade) || 0) * (parseFloat(t.valorUnitario) || 0)), 0), 0
       ),
     };
 
-    const docRef = await addDoc(collection(db, "orcamentos"), orcamentoData);
-    setOrcamentoSalvo(orcamentoData);
+    await addDoc(collection(db, "orcamentos"), orcamentoData);
     alert("Orçamento salvo!");
     setClienteNome(""); 
     setClienteMorada(""); 
@@ -223,7 +227,7 @@ export default function NovoOrcamentoPage() {
             <div className="font-semibold mb-2">{partes.find(p => p.id === parteId)?.nome}</div>
             <div className="flex flex-wrap gap-2 mb-2">
               {trabalhos.filter(t => t.parte_processo_id === parteId).map(trabalho => {
-                const selecionado = !!itens.find(item => item.parteId === parteId && item.trabalhos.find((t: any) => t.trabalhoId === trabalho.id));
+                const selecionado = !!itens.find(item => item.parteId === parteId && item.trabalhos.find(t => t.trabalhoId === trabalho.id));
                 const label = trabalho.descricao?.trim() ? trabalho.descricao.slice(0, 30) + (trabalho.descricao.length > 30 ? '...' : '') : 'Trabalho sem nome';
                 return (
                   <button
@@ -252,7 +256,7 @@ export default function NovoOrcamentoPage() {
                   <span className="flex-1" />
                 </li>
               )}
-              {(itens.find(item => item.parteId === parteId)?.trabalhos || []).map((t: any) => {
+              {(itens.find(item => item.parteId === parteId)?.trabalhos || []).map(t => {
                 const trabalho = trabalhos.find(tr => tr.id === t.trabalhoId);
                 return (
                   <li key={t.trabalhoId} className="flex flex-col gap-1 text-sm border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0">
@@ -264,7 +268,7 @@ export default function NovoOrcamentoPage() {
                       <input type="text" value={t.quantidade} onChange={e => updateTrabalho(parteId, t.trabalhoId, "quantidade", e.target.value.replace(/\D/g, ''))} className="w-16 border border-zinc-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
                       <input type="text" value={t.unidade} onChange={e => updateTrabalho(parteId, t.trabalhoId, "unidade", e.target.value)} className="w-16 border border-zinc-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
                       <input type="text" value={t.valorUnitario} onChange={e => updateTrabalho(parteId, t.trabalhoId, "valorUnitario", e.target.value.replace(/[^\d.]/g, ''))} className="w-24 border border-zinc-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Valor unitário" />
-                      <span className="text-xs">Total: {((parseFloat(t.quantidade) || 0) * (parseFloat(t.valorUnitario) || 0)).toFixed(2)}</span>
+                      <span className="text-xs">Total: {Number(t.quantidade || 0) * Number(t.valorUnitario || 0)}</span>
                       <button type="button" className="text-red-600 ml-2 hover:underline cursor-pointer" onClick={() => removeTrabalho(parteId, t.trabalhoId)}>Remover</button>
                     </div>
                   </li>
@@ -295,7 +299,7 @@ export default function NovoOrcamentoPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {item.trabalhos.map((t: any) => {
+                    {item.trabalhos.map(t => {
                       const trabalho = trabalhos.find(tr => tr.id === t.trabalhoId);
                       return (
                         <tr key={t.trabalhoId} className="bg-zinc-50">
@@ -308,7 +312,8 @@ export default function NovoOrcamentoPage() {
                           <td className="border px-2 py-1 text-center">{t.quantidade}</td>
                           <td className="border px-2 py-1 text-center">{t.unidade}</td>
                           <td className="border px-2 py-1 text-center">{Number(t.valorUnitario).toFixed(2)}</td>
-                          <td className="border px-2 py-1 text-center">{(t.quantidade * t.valorUnitario).toFixed(2)}</td>
+                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                          <td className="border px-2 py-1 text-center">{(Number(t.quantidade) * Number(t.valorUnitario)).toFixed(2)}</td>
                         </tr>
                       );
                     })}
@@ -330,16 +335,19 @@ export default function NovoOrcamentoPage() {
               data: new Date().toISOString(),
               itens: itens.map(item => ({
                 ...item,
-                trabalhos: item.trabalhos.map((t: any) => {
-                  const original = trabalhos.find((tr: any) => tr.id === t.trabalhoId);
+                trabalhos: item.trabalhos.map(t => {
+                  const original = trabalhos.find(tr => tr.id === t.trabalhoId);
                   return {
                     ...t,
-                    descricao: original?.descricao || t.descricao || "Trabalho sem nome",
+                    descricao: original?.descricao || "",
                   };
                 }),
-                parteNome: partes.find((p: any) => p.id === item.parteId)?.nome || item.parteId,
+                parteNome: partes.find(p => p.id === item.parteId)?.nome || item.parteId,
               })),
-              total: itens.reduce((acc: number, item: any) => acc + item.trabalhos.reduce((s: number, t: any) => s + ((parseFloat(t.quantidade) || 0) * (parseFloat(t.valorUnitario) || 0)), 0), 0),
+              total: itens.reduce((acc, item) => 
+                acc + item.trabalhos.reduce((s, t) => 
+                  s + ((parseFloat(t.quantidade) || 0) * (parseFloat(t.valorUnitario) || 0)), 0), 0
+              ),
             }} />}
             fileName={`orcamento-${clienteNome}.pdf`}
           >

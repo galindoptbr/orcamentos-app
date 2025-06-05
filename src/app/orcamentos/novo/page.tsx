@@ -19,6 +19,41 @@ interface Trabalho {
   descricao?: string;
 }
 
+interface TrabalhoItem {
+  trabalhoId: string;
+  nome: string;
+  quantidade: string;
+  unidade: string;
+  valorUnitario: string;
+}
+
+interface ItemOrcamento {
+  parteId: string;
+  trabalhos: TrabalhoItem[];
+}
+
+interface OrcamentoData {
+  cliente: {
+    nome: string;
+    morada: string;
+    nif: string;
+  };
+  data: string;
+  itens: {
+    parteId: string;
+    parteNome: string;
+    trabalhos: {
+      trabalhoId: string;
+      nome: string;
+      descricao: string;
+      quantidade: string;
+      unidade: string;
+      valorUnitario: string;
+    }[];
+  }[];
+  total: number;
+}
+
 export default function NovoOrcamentoPage() {
   // Cliente
   const [clienteNome, setClienteNome] = useState("");
@@ -31,8 +66,8 @@ export default function NovoOrcamentoPage() {
 
   // Seleção
   const [partesSelecionadas, setPartesSelecionadas] = useState<string[]>([]);
-  const [itens, setItens] = useState<any[]>([]); // [{parteId, trabalhos: [{trabalhoId, quantidade, unidade, valorUnitario}]}]
-  const [orcamentoSalvo, setOrcamentoSalvo] = useState<any>(null);
+  const [itens, setItens] = useState<ItemOrcamento[]>([]);
+  const [orcamentoSalvo, setOrcamentoSalvo] = useState<OrcamentoData | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -60,26 +95,44 @@ export default function NovoOrcamentoPage() {
     setItens(prev => {
       const parte = prev.find(item => item.parteId === parteId);
       if (parte) {
-        if (parte.trabalhos.find((t: any) => t.trabalhoId === trabalho.id)) return prev;
+        if (parte.trabalhos.find(t => t.trabalhoId === trabalho.id)) return prev;
         return prev.map(item =>
           item.parteId === parteId
-            ? { ...item, trabalhos: [...item.trabalhos, { trabalhoId: trabalho.id, nome: trabalho.nome, quantidade: trabalho.quantidade_padrao || 1, unidade: trabalho.unidade || "unid", valorUnitario: 0 }] }
+            ? { 
+                ...item, 
+                trabalhos: [...item.trabalhos, { 
+                  trabalhoId: trabalho.id, 
+                  nome: trabalho.nome, 
+                  quantidade: String(trabalho.quantidade_padrao || 1), 
+                  unidade: trabalho.unidade || "unid", 
+                  valorUnitario: "0" 
+                }] 
+              }
             : item
         );
       } else {
-        return [...prev, { parteId, trabalhos: [{ trabalhoId: trabalho.id, nome: trabalho.nome, quantidade: trabalho.quantidade_padrao || 1, unidade: trabalho.unidade || "unid", valorUnitario: 0 }] }];
+        return [...prev, { 
+          parteId, 
+          trabalhos: [{ 
+            trabalhoId: trabalho.id, 
+            nome: trabalho.nome, 
+            quantidade: String(trabalho.quantidade_padrao || 1), 
+            unidade: trabalho.unidade || "unid", 
+            valorUnitario: "0" 
+          }] 
+        }];
       }
     });
   }
 
   // Atualiza campos de trabalho
-  function updateTrabalho(parteId: string, trabalhoId: string, field: string, value: any) {
+  function updateTrabalho(parteId: string, trabalhoId: string, field: keyof TrabalhoItem, value: string) {
     setItens(prev =>
       prev.map(item =>
         item.parteId === parteId
           ? {
               ...item,
-              trabalhos: item.trabalhos.map((t: any) =>
+              trabalhos: item.trabalhos.map(t =>
                 t.trabalhoId === trabalhoId ? { ...t, [field]: value } : t
               ),
             }
@@ -93,7 +146,7 @@ export default function NovoOrcamentoPage() {
     setItens(prev =>
       prev.map(item =>
         item.parteId === parteId
-          ? { ...item, trabalhos: item.trabalhos.filter((t: any) => t.trabalhoId !== trabalhoId) }
+          ? { ...item, trabalhos: item.trabalhos.filter(t => t.trabalhoId !== trabalhoId) }
           : item
       ).filter(item => item.trabalhos.length > 0)
     );

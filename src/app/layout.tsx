@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -19,7 +20,15 @@ function Nav() {
     <nav className="w-full bg-white shadow-md py-4 px-6 flex justify-center items-center fixed top-0 left-0 z-20 border-b border-zinc-200">
       <div className="flex gap-8 items-center w-full max-w-5xl mx-auto">
         <Link href="/" className="flex items-center mr-6 group">
-          <img src="/RE9.png" alt="Logo RE9" className="h-14 w-auto mr-2 transition-transform group-hover:scale-105" style={{maxHeight:56}} />
+          <Image 
+            src="/RE9.png" 
+            alt="Logo RE9" 
+            width={120}
+            height={56}
+            className="h-14 w-auto mr-2 transition-transform group-hover:scale-105" 
+            style={{maxHeight:56}}
+            priority
+          />
         </Link>
         <div className="flex gap-8 items-center flex-1 justify-center">
           {links.map(link => {

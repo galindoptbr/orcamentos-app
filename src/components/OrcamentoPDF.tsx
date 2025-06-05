@@ -8,6 +8,35 @@ import {
 } from "@react-pdf/renderer";
 import React from "react";
 
+interface Trabalho {
+  trabalhoId: string;
+  nome: string;
+  descricao: string;
+  quantidade: string;
+  unidade: string;
+  valorUnitario: string;
+  numero?: string;
+}
+
+interface ItemOrcamento {
+  parteId: string;
+  parteNome: string;
+  trabalhos: Trabalho[];
+}
+
+interface Cliente {
+  nome: string;
+  morada: string;
+  nif: string;
+}
+
+interface Orcamento {
+  cliente: Cliente;
+  data: string;
+  itens: ItemOrcamento[];
+  total: number;
+}
+
 const styles = StyleSheet.create({
   page: {
     padding: 24,
@@ -155,27 +184,27 @@ const styles = StyleSheet.create({
   },
 });
 
-function enumerate(items: any[], prefix: string) {
-  // Gera numeração hierárquica: 1, 1.1, 1.1.1, etc.
+function enumerate(items: Trabalho[], prefix: string): Trabalho[] {
   return items.map((item, idx) => ({
     ...item,
     numero: prefix ? `${prefix}.${idx + 1}` : `${idx + 1}`,
   }));
 }
 
-export function OrcamentoPDF({ orcamento }: { orcamento: any }) {
+export function OrcamentoPDF({ orcamento }: { orcamento: Orcamento }) {
   // Agrupar trabalhos por parteNome
-  const grupos = orcamento.itens.reduce((acc: any, item: any) => {
+  const grupos = orcamento.itens.reduce((acc: Record<string, Trabalho[]>, item: ItemOrcamento) => {
     const nome = item.parteNome || item.parteId;
     if (!acc[nome]) acc[nome] = [];
-    item.trabalhos.forEach((t: any) => acc[nome].push(t));
+    item.trabalhos.forEach(t => acc[nome].push(t));
     return acc;
   }, {});
+
   // Enumerar seções e trabalhos
   const partes = Object.entries(grupos).map(([parte, trabalhos], idx) => ({
     nome: parte,
     numero: `${idx + 1}`,
-    trabalhos: enumerate(trabalhos as any[], `${idx + 1}`),
+    trabalhos: enumerate(trabalhos, `${idx + 1}`),
   }));
 
   return (
@@ -232,7 +261,7 @@ export function OrcamentoPDF({ orcamento }: { orcamento: any }) {
                 <Text style={styles.sectionNumber}>{parte.numero}</Text>
                 <Text>{parte.nome}</Text>
               </View>
-              {parte.trabalhos.map((t: any, i: number) => (
+              {parte.trabalhos.map((t: Trabalho, i: number) => (
                 <View style={styles.tableRow} key={t.trabalhoId + i}>
                   <Text style={[styles.tableCell, styles.itemCell]}>
                     {t.numero}

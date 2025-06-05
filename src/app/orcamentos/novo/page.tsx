@@ -54,13 +54,6 @@ interface OrcamentoData {
   total: number;
 }
 
-function enumerate(items: Trabalho[], prefix: string): Trabalho[] {
-  return items.map((item, idx) => ({
-    ...item,
-    numero: prefix ? `${prefix}.${idx + 1}` : `${idx + 1}`,
-  }));
-}
-
 function calcularTotal(itens: ItemOrcamento[]): number {
   return itens.reduce((acc, item) => 
     acc + item.trabalhos.reduce((s, t) => {
@@ -319,7 +312,6 @@ export default function NovoOrcamentoPage() {
                           <td className="border px-2 py-1 text-center">{t.quantidade}</td>
                           <td className="border px-2 py-1 text-center">{t.unidade}</td>
                           <td className="border px-2 py-1 text-center">{Number(t.valorUnitario).toFixed(2)}</td>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                           <td className="border px-2 py-1 text-center">{(Number(t.quantidade) * Number(t.valorUnitario)).toFixed(2)}</td>
                         </tr>
                       );

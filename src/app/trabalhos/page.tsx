@@ -8,13 +8,21 @@ interface ParteProcesso {
   nome: string;
 }
 
+interface Trabalho {
+  id: string;
+  parte_processo_id: string;
+  descricao: string;
+  unidade: string;
+  quantidade_padrao: number;
+}
+
 export default function TrabalhosPage() {
   const [partes, setPartes] = useState<ParteProcesso[]>([]);
   const [parteId, setParteId] = useState("");
   const [descricao, setDescricao] = useState("");
   const [unidade, setUnidade] = useState("");
   const [quantidadePadrao, setQuantidadePadrao] = useState(1);
-  const [trabalhos, setTrabalhos] = useState<any[]>([]);
+  const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
 
@@ -30,7 +38,7 @@ export default function TrabalhosPage() {
     async function fetchTrabalhos() {
       setLoading(true);
       const querySnapshot = await getDocs(collection(db, "trabalhos"));
-      setTrabalhos(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setTrabalhos(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Trabalho));
       setLoading(false);
     }
     fetchTrabalhos();
@@ -51,14 +59,14 @@ export default function TrabalhosPage() {
     setQuantidadePadrao(1);
     // Atualiza lista
     const querySnapshot = await getDocs(collection(db, "trabalhos"));
-    setTrabalhos(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    setTrabalhos(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Trabalho));
     setSalvando(false);
   }
 
   async function handleRemoverTrabalho(trabalhoId: string) {
     await deleteDoc(doc(db, "trabalhos", trabalhoId));
     const querySnapshot = await getDocs(collection(db, "trabalhos"));
-    setTrabalhos(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    setTrabalhos(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Trabalho));
   }
 
   return (

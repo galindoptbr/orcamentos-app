@@ -54,11 +54,21 @@ interface OrcamentoData {
   total: number;
 }
 
-function calcularTotal(quantidade: string, valorUnitario: string): string {
-  const qtd = Number(quantidade);
-  const valor = Number(valorUnitario);
-  if (isNaN(qtd) || isNaN(valor)) return "0.00";
-  return (qtd * valor).toFixed(2);
+function enumerate(items: Trabalho[], prefix: string): Trabalho[] {
+  return items.map((item, idx) => ({
+    ...item,
+    numero: prefix ? `${prefix}.${idx + 1}` : `${idx + 1}`,
+  }));
+}
+
+function calcularTotal(itens: ItemOrcamento[]): number {
+  return itens.reduce((acc, item) => 
+    acc + item.trabalhos.reduce((s, t) => {
+      const quantidade = parseFloat(t.quantidade) || 0;
+      const valorUnitario = parseFloat(t.valorUnitario) || 0;
+      return s + (quantidade * valorUnitario);
+    }, 0), 0
+  );
 }
 
 export default function NovoOrcamentoPage() {
@@ -184,10 +194,7 @@ export default function NovoOrcamentoPage() {
           };
         })
       })),
-      total: itens.reduce((acc, item) => 
-        acc + item.trabalhos.reduce((s, t) => 
-          s + ((parseFloat(t.quantidade) || 0) * (parseFloat(t.valorUnitario) || 0)), 0), 0
-      ),
+      total: calcularTotal(itens),
     };
 
     await addDoc(collection(db, "orcamentos"), orcamentoData);
@@ -268,7 +275,7 @@ export default function NovoOrcamentoPage() {
                       <input type="text" value={t.quantidade} onChange={e => updateTrabalho(parteId, t.trabalhoId, "quantidade", e.target.value.replace(/\D/g, ''))} className="w-16 border border-zinc-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
                       <input type="text" value={t.unidade} onChange={e => updateTrabalho(parteId, t.trabalhoId, "unidade", e.target.value)} className="w-16 border border-zinc-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
                       <input type="text" value={t.valorUnitario} onChange={e => updateTrabalho(parteId, t.trabalhoId, "valorUnitario", e.target.value.replace(/[^\d.]/g, ''))} className="w-24 border border-zinc-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Valor unitário" />
-                      <span className="text-xs">Total: {Number(t.quantidade || 0) * Number(t.valorUnitario || 0)}</span>
+                      <span className="text-xs">Total: {Number(t.quantidade) * Number(t.valorUnitario)}</span>
                       <button type="button" className="text-red-600 ml-2 hover:underline cursor-pointer" onClick={() => removeTrabalho(parteId, t.trabalhoId)}>Remover</button>
                     </div>
                   </li>
@@ -323,7 +330,7 @@ export default function NovoOrcamentoPage() {
             ))}
           </div>
         )}
-        <div className="font-bold text-right mt-4">Total: {itens.reduce((acc, item) => acc + item.trabalhos.reduce((s: number, t: any) => s + (t.quantidade * t.valorUnitario), 0), 0).toFixed(2)} €</div>
+        <div className="font-bold text-right mt-4">Total: {calcularTotal(itens).toFixed(2)} €</div>
       </div>
       {/* Botões PDF e Salvar alinhados fora do resumo */}
       <div className="flex flex-col sm:flex-row justify-between items-center mt-8 mb-6 max-w-3xl mx-auto gap-4">
@@ -344,10 +351,7 @@ export default function NovoOrcamentoPage() {
                 }),
                 parteNome: partes.find(p => p.id === item.parteId)?.nome || item.parteId,
               })),
-              total: itens.reduce((acc, item) => 
-                acc + item.trabalhos.reduce((s, t) => 
-                  s + ((parseFloat(t.quantidade) || 0) * (parseFloat(t.valorUnitario) || 0)), 0), 0
-              ),
+              total: calcularTotal(itens),
             }} />}
             fileName={`orcamento-${clienteNome}.pdf`}
           >

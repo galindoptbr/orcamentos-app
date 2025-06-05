@@ -3,17 +3,23 @@ import { useState, useEffect } from "react";
 import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/firebase";
 
+interface ParteProcesso {
+  id: string;
+  nome: string;
+  descricao?: string;
+}
+
 export default function PartesProcessoPage() {
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [partes, setPartes] = useState<any[]>([]);
+  const [partes, setPartes] = useState<ParteProcesso[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchPartes() {
       setLoading(true);
       const querySnapshot = await getDocs(collection(db, "partes_processo"));
-      setPartes(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setPartes(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ParteProcesso)));
       setLoading(false);
     }
     fetchPartes();
@@ -27,13 +33,13 @@ export default function PartesProcessoPage() {
     setDescricao("");
     // Atualiza lista
     const querySnapshot = await getDocs(collection(db, "partes_processo"));
-    setPartes(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    setPartes(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ParteProcesso)));
   }
 
   async function handleRemoverParte(parteId: string) {
     await deleteDoc(doc(db, "partes_processo", parteId));
     const querySnapshot = await getDocs(collection(db, "partes_processo"));
-    setPartes(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    setPartes(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ParteProcesso)));
   }
 
   return (

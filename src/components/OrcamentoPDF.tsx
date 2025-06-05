@@ -200,6 +200,16 @@ export function OrcamentoPDF({ orcamento }: { orcamento: Orcamento }) {
     return acc;
   }, {});
 
+  // Calcular total por grupo
+  const totaisPorGrupo = Object.entries(grupos).reduce((acc: Record<string, number>, [nome, trabalhos]) => {
+    acc[nome] = trabalhos.reduce((total, t) => {
+      const quantidade = parseFloat(t.quantidade) || 0;
+      const valorUnitario = parseFloat(t.valorUnitario) || 0;
+      return total + (quantidade * valorUnitario);
+    }, 0);
+    return acc;
+  }, {});
+
   // Enumerar seções e trabalhos
   const partes = Object.entries(grupos).map(([parte, trabalhos], idx) => ({
     nome: parte,

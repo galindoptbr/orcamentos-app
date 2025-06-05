@@ -5,15 +5,38 @@ import { db } from "@/firebase";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { OrcamentoPDF } from "@/components/OrcamentoPDF";
 
+interface Orcamento {
+  id: string;
+  cliente: {
+    nome: string;
+    morada: string;
+    nif: string;
+  };
+  data: string;
+  itens: {
+    parteId: string;
+    parteNome: string;
+    trabalhos: {
+      trabalhoId: string;
+      nome: string;
+      descricao: string;
+      quantidade: string;
+      unidade: string;
+      valorUnitario: string;
+    }[];
+  }[];
+  total: number;
+}
+
 export default function OrcamentosPage() {
-  const [orcamentos, setOrcamentos] = useState<any[]>([]);
+  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchOrcamentos() {
       setLoading(true);
       const snap = await getDocs(collection(db, "orcamentos"));
-      setOrcamentos(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setOrcamentos(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Orcamento));
       setLoading(false);
     }
     fetchOrcamentos();

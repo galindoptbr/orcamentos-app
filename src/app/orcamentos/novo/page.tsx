@@ -5,6 +5,7 @@ import { collection, addDoc, getDocs, query, where, orderBy, limit, getDoc, doc,
 import { db } from "@/firebase";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { OrcamentoPDF } from "@/components/OrcamentoPDF";
+import { Suspense } from "react";
 
 interface ParteProcesso {
   id: string;
@@ -107,7 +108,7 @@ function calcularTotal(itens: ItemOrcamento[]): number {
   );
 }
 
-export default function NovoOrcamentoPage() {
+function NovoOrcamentoPage() {
   const searchParams = useSearchParams();
   const orcamentoId = searchParams.get("id");
   const router = useRouter();
@@ -449,5 +450,13 @@ export default function NovoOrcamentoPage() {
         ) : <div />}
       </div>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <NovoOrcamentoPage />
+    </Suspense>
   );
 } 

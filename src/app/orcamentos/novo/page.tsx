@@ -138,9 +138,9 @@ export default function NovoOrcamentoPage() {
           setClienteNome(data.cliente?.nome || "");
           setClienteMorada(data.cliente?.morada || "");
           setClienteNif(data.cliente?.nif || "");
-          setItens((data.itens || []).map((item: any) => ({
+          setItens((data.itens || []).map((item: ItemOrcamento) => ({
             parteId: item.parteId,
-            trabalhos: (item.trabalhos || []).map((t: any) => ({
+            trabalhos: (item.trabalhos || []).map((t: TrabalhoItem) => ({
               trabalhoId: t.trabalhoId,
               nome: t.nome,
               quantidade: t.quantidade,
@@ -148,12 +148,12 @@ export default function NovoOrcamentoPage() {
               valorUnitario: t.valorUnitario,
             }))
           })));
-          setPartesSelecionadas((data.itens || []).map((item: any) => item.parteId));
+          setPartesSelecionadas((data.itens || []).map((item: ItemOrcamento) => item.parteId));
         }
       }
     }
     fetchData();
-  }, []);
+  }, [orcamentoId]);
 
   // Adiciona ou remove parte selecionada
   function toggleParte(parteId: string) {

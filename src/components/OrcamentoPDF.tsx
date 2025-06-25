@@ -31,6 +31,7 @@ interface Cliente {
 }
 
 interface Orcamento {
+  numero: string;
   cliente: Cliente;
   data: string;
   itens: ItemOrcamento[];
@@ -45,11 +46,23 @@ const styles = StyleSheet.create({
     color: "#222",
     backgroundColor: "#fff",
   },
+  numeroOrcamento: {
+    position: "absolute",
+    top: 24,
+    left: 24,
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#1a3353",
+    backgroundColor: "#ffd600",
+    padding: "4px 8px",
+    borderRadius: 4,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 12,
+    marginTop: 20,
   },
   logo: {
     width: 90,
@@ -111,24 +124,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   descCell: {
-    flexGrow: 2.5,
-    minWidth: 120,
+    flexGrow: 1,
+    minWidth: 200,
     textAlign: "left",
   },
-  unidadeCell: {
-    width: 40,
-    textAlign: "center",
-  },
-  quantCell: {
-    width: 40,
-    textAlign: "center",
-  },
-  unitCell: {
-    width: 50,
-    textAlign: "center",
-  },
   totalCell: {
-    width: 60,
+    width: 80,
     textAlign: "center",
     fontWeight: "bold",
   },
@@ -137,12 +138,7 @@ const styles = StyleSheet.create({
     color: "#1a3353",
     fontWeight: "bold",
     fontSize: 11,
-    padding: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#bdbdbd",
-    borderTopWidth: 1,
-    borderTopColor: "#bdbdbd",
-    marginTop: 8,
+    padding: 2,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -167,7 +163,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#bdbdbd",
   },
   totalLabel: {
-    flexGrow: 5,
+    flexGrow: 1,
     textAlign: "right",
     fontWeight: "bold",
     color: "#1a3353",
@@ -175,7 +171,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   totalValue: {
-    width: 60,
+    width: 80,
     textAlign: "right",
     fontWeight: "bold",
     color: "#1a3353",
@@ -184,141 +180,101 @@ const styles = StyleSheet.create({
   },
 });
 
-function enumerate(items: Trabalho[], prefix: string): Trabalho[] {
-  return items.map((item, idx) => ({
-    ...item,
-    numero: prefix ? `${prefix}.${idx + 1}` : `${idx + 1}`,
-  }));
+function calcularTotalParte(trabalhos: Trabalho[]): number {
+  return trabalhos.reduce((acc, t) => {
+    const quantidade = parseFloat(t.quantidade) || 0;
+    const valorUnitario = parseFloat(t.valorUnitario) || 0;
+    return acc + (quantidade * valorUnitario);
+  }, 0);
 }
 
 export function OrcamentoPDF({ orcamento }: { orcamento: Orcamento }) {
-  // Agrupar trabalhos por parteNome
-  const grupos = orcamento.itens.reduce((acc: Record<string, Trabalho[]>, item: ItemOrcamento) => {
-    const nome = item.parteNome || item.parteId;
-    if (!acc[nome]) acc[nome] = [];
-    item.trabalhos.forEach(t => acc[nome].push(t));
-    return acc;
-  }, {});
-
-  // Enumerar seções e trabalhos
-  const partes = Object.entries(grupos).map(([parte, trabalhos], idx) => ({
-    nome: parte,
-    numero: `${idx + 1}`,
-    trabalhos: enumerate(trabalhos, `${idx + 1}`),
-  }));
-
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        {/* Número do Orçamento */}
+        <Text style={styles.numeroOrcamento}>
+          Orçamento Nº {orcamento.numero}
+        </Text>
         {/* Header */}
         <View style={styles.header}>
+          {/* Logotipo e empresa */}
           <View style={{ flex: 1 }}>
-            <View style={{ alignItems: "flex-start", marginBottom: 6 }}>
-              {/* eslint-disable-next-line jsx-a11y/alt-text */}
-              <Image
-                src="/RE9.png"
-                style={{ width: 120, height: 54, marginBottom: 2 }}
-              />
-              <Text
-                style={[styles.title, { textAlign: "left", marginBottom: 2 }]}
-              >
-                {orcamento.cliente?.nome?.toUpperCase()}
-              </Text>
-              <Text style={{ textAlign: "left" }}>
-                Data: {orcamento.data ? new Date(orcamento.data).toLocaleDateString() : ""}
-              </Text>
-              <Text style={{ textAlign: "left" }}>
-                Morada: {orcamento.cliente?.morada}
-              </Text>
-              <Text style={{ textAlign: "left" }}>
-                NIF: {orcamento.cliente?.nif}
-              </Text>
+            <Image
+              src="/RE9.png"
+              style={{ width: 120, height: 54, marginBottom: 2 }}
+            />
+            <View style={{ marginTop: 4 }}>
+              <Text style={{ fontWeight: "bold", fontSize: 11 }}>Paulo Jorge Peixoto Pinto</Text>
+              <Text>Rua Do Monte Nº16 4760-196 Gavião, V.N.Famalicão</Text>
+              <Text>NIF: 231376960</Text>
+              <Text>Tel: 916918979</Text>
+              <Text>re9interiores@outlook.pt</Text>
             </View>
           </View>
-          <View style={styles.empresaBox}>
-            <Text>Paulo Jorge Peixoto Pinto</Text>
-            <Text>Rua Do Monte Nº16 4760-196 Gavião, V.N.Famalicão</Text>
-            <Text>NIF: 231376960</Text>
-            <Text>Tel: 916918979</Text>
-            <Text>re9interiores@outlook.pt</Text>
+          {/* Cliente à direita */}
+          <View style={{ minWidth: 220, alignItems: "flex-end" }}>
+            <View style={{ border: "1px solid #bdbdbd", padding: 8, fontSize: 10, width: 200 }}>
+              <Text style={{ fontWeight: "bold", fontSize: 12 }}>{orcamento.cliente?.nome}</Text>
+              <Text>{orcamento.cliente?.morada}</Text>
+              <Text>NIF: {orcamento.cliente?.nif}</Text>
+              <Text>Data: {orcamento.data ? new Date(orcamento.data).toLocaleDateString() : ""}</Text>
+            </View>
           </View>
         </View>
-        {/* Cabeçalho da tabela */}
+        {/* Tabela de partes e totais */}
         <View style={styles.table}>
           <View style={[styles.tableRow, styles.tableHeader]}>
             <Text style={[styles.tableCell, styles.itemCell]}>ITEM</Text>
-            <Text style={[styles.tableCell, styles.descCell]}>
-              DESIGNAÇÃO DOS TRABALHOS
-            </Text>
-            <Text style={[styles.tableCell, styles.unidadeCell]}>UNID.</Text>
-            <Text style={[styles.tableCell, styles.quantCell]}>QUANT.</Text>
-            <Text style={[styles.tableCell, styles.unitCell]}>UNIT.</Text>
+            <Text style={[styles.tableCell, styles.descCell]}>DESIGNAÇÃO DOS TRABALHOS</Text>
             <Text style={[styles.tableCell, styles.totalCell]}>TOTAL</Text>
           </View>
-          {/* Seções e trabalhos */}
-          {partes.map((parte) => (
-            <React.Fragment key={parte.nome}>
-              <View style={styles.sectionTitle}>
-                <Text style={styles.sectionNumber}>{parte.numero}</Text>
-                <Text>{parte.nome}</Text>
-              </View>
-              {parte.trabalhos.map((t: Trabalho, i: number) => (
-                <View style={styles.tableRow} key={t.trabalhoId + i}>
-                  <Text style={[styles.tableCell, styles.itemCell]}>
-                    {t.numero}
-                  </Text>
-                  <View
-                    style={[
-                      styles.tableCell,
-                      styles.descCell,
-                      { flexDirection: "column" },
-                    ]}
-                  >
-                    <Text>
-                      {t.descricao?.trim() ? t.descricao : "Trabalho sem nome"}
-                    </Text>
-                  </View>
-                  <Text style={[styles.tableCell, styles.unidadeCell]}>
-                    {t.unidade}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.quantCell]}>
-                    {t.quantidade}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.unitCell]}>
-                    {Number(t.valorUnitario).toFixed(2)}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.totalCell]}>
-                    {(
-                      parseFloat(t.quantidade) * parseFloat(t.valorUnitario)
-                    ).toFixed(2)}
-                  </Text>
+          {orcamento.itens.map((item, idx) => {
+            const totalParte = calcularTotalParte(item.trabalhos);
+            return (
+              <React.Fragment key={item.parteId}>
+                <View style={
+                  idx === 0
+                    ? [styles.sectionTitle]
+                    : [{ ...styles.sectionTitle, marginTop: 8 }]
+                }>
+                  <Text style={styles.sectionNumber}>{idx + 1}</Text>
+                  <Text>{item.parteNome}</Text>
                 </View>
-              ))}
-            </React.Fragment>
-          ))}
-          {/* Total */}
+                {/* Lista apenas as descrições dos trabalhos, sem valores */}
+                {item.trabalhos.map((t: Trabalho, i: number) => (
+                  <View style={[styles.tableRow, { marginBottom: 0, paddingBottom: 0 }]} key={t.trabalhoId + i}>
+                    <Text style={[styles.tableCell, styles.itemCell]}>{`${idx + 1}.${i + 1}`}</Text>
+                    <View style={[styles.tableCell, styles.descCell, { flexDirection: "column" }]}> 
+                      <Text>{t.descricao?.trim() ? t.descricao : "Trabalho sem nome"}</Text>
+                    </View>
+                    <Text style={[styles.tableCell, styles.totalCell]}></Text>
+                  </View>
+                ))}
+                {/* Total da parte, sem margem inferior */}
+                <View style={[
+                  styles.tableRow,
+                  { backgroundColor: "#f0f0f0", marginBottom: 0, paddingBottom: 2 }
+                ]}> 
+                  <Text style={[styles.tableCell, styles.itemCell]}></Text>
+                  <Text style={[styles.tableCell, styles.descCell, { fontWeight: "bold" }]}>Total {item.parteNome}</Text>
+                  <Text style={[styles.tableCell, styles.totalCell, { fontWeight: "bold" }]}>{totalParte.toFixed(2)}</Text>
+                </View>
+              </React.Fragment>
+            );
+          })}
+          {/* Total Geral */}
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>
-              {Number(orcamento.total).toFixed(2)} €
-            </Text>
+            <Text style={styles.totalLabel}>Total Geral</Text>
+            <Text style={styles.totalValue}>{Number(orcamento.total).toFixed(2)} €</Text>
           </View>
         </View>
-        {/* Rodapé com condições de pagamento e validade */}
+        {/* Rodapé */}
         <View style={{ marginTop: 18 }}>
-          <Text style={{ color: "red", fontSize: 10, marginBottom: 6 }}>
-            Acresce IVA à taxa legal
-          </Text>
-          <Text style={{ fontWeight: "bold", fontSize: 10, marginBottom: 2 }}>
-            Condições de pagamento:
-          </Text>
-          <Text style={{ fontSize: 10, marginBottom: 8 }}>
-            50% do valor total no início da obra, 30% antes das pinturas e o
-            restante no final da mesma.
-          </Text>
-          <Text style={{ fontWeight: "bold", fontSize: 10 }}>
-            Orçamento válido por 30 dias
-          </Text>
+          <Text style={{ color: "red", fontSize: 10, marginBottom: 6 }}>Acresce IVA à taxa legal</Text>
+          <Text style={{ fontWeight: "bold", fontSize: 10, marginBottom: 2 }}>Condições de pagamento:</Text>
+          <Text style={{ fontSize: 10, marginBottom: 8 }}>50% do valor total no início da obra, 30% antes das pinturas e o restante no final da mesma.</Text>
+          <Text style={{ fontWeight: "bold", fontSize: 10 }}>Orçamento válido por 30 dias</Text>
         </View>
       </Page>
     </Document>

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { useSearchParams, useRouter } from "next/navigation";
+import { collection, addDoc, getDocs, query, where, orderBy, limit, getDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { OrcamentoPDF } from "@/components/OrcamentoPDF";
@@ -33,6 +34,7 @@ interface ItemOrcamento {
 }
 
 interface OrcamentoData {
+  numero: string;
   cliente: {
     nome: string;
     morada: string;
@@ -54,6 +56,47 @@ interface OrcamentoData {
   total: number;
 }
 
+// Função para gerar número de orçamento anual
+async function gerarNumeroOrcamento(): Promise<string> {
+  const anoAtual = new Date().getFullYear();
+  
+  // Buscar o último orçamento do ano atual
+  const q = query(
+    collection(db, "orcamentos"),
+    where("numero", ">=", `${anoAtual}-001`),
+    where("numero", "<=", `${anoAtual}-999`),
+    orderBy("numero", "desc"),
+    limit(1)
+  );
+  
+  const snapshot = await getDocs(q);
+  
+  if (snapshot.empty) {
+    // Verificar se existem orçamentos sem número para este ano
+    const qTodos = query(
+      collection(db, "orcamentos"),
+      orderBy("data", "desc")
+    );
+    const todosSnapshot = await getDocs(qTodos);
+    
+    // Contar quantos orçamentos já existem para este ano (com ou sem número)
+    const orcamentosAno = todosSnapshot.docs.filter(doc => {
+      const data = doc.data().data;
+      if (!data) return false;
+      const anoDoc = new Date(data).getFullYear();
+      return anoDoc === anoAtual;
+    });
+    
+    return `${anoAtual}-${(orcamentosAno.length + 1).toString().padStart(3, '0')}`;
+  }
+  
+  const ultimoNumero = snapshot.docs[0].data().numero;
+  const ultimoSequencial = parseInt(ultimoNumero.split('-')[1]);
+  const novoSequencial = ultimoSequencial + 1;
+  
+  return `${anoAtual}-${novoSequencial.toString().padStart(3, '0')}`;
+}
+
 function calcularTotal(itens: ItemOrcamento[]): number {
   return itens.reduce((acc, item) => 
     acc + item.trabalhos.reduce((s, t) => {
@@ -65,6 +108,9 @@ function calcularTotal(itens: ItemOrcamento[]): number {
 }
 
 export default function NovoOrcamentoPage() {
+  const searchParams = useSearchParams();
+  const orcamentoId = searchParams.get("id");
+  const router = useRouter();
   // Cliente
   const [clienteNome, setClienteNome] = useState("");
   const [clienteMorada, setClienteMorada] = useState("");
@@ -84,6 +130,27 @@ export default function NovoOrcamentoPage() {
       setPartes(partesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as ParteProcesso));
       const trabalhosSnap = await getDocs(collection(db, "trabalhos"));
       setTrabalhos(trabalhosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Trabalho));
+      // Se estiver editando, buscar orçamento e preencher campos
+      if (orcamentoId) {
+        const orcDoc = await getDoc(doc(db, "orcamentos", orcamentoId));
+        if (orcDoc.exists()) {
+          const data = orcDoc.data();
+          setClienteNome(data.cliente?.nome || "");
+          setClienteMorada(data.cliente?.morada || "");
+          setClienteNif(data.cliente?.nif || "");
+          setItens((data.itens || []).map((item: any) => ({
+            parteId: item.parteId,
+            trabalhos: (item.trabalhos || []).map((t: any) => ({
+              trabalhoId: t.trabalhoId,
+              nome: t.nome,
+              quantidade: t.quantidade,
+              unidade: t.unidade,
+              valorUnitario: t.valorUnitario,
+            }))
+          })));
+          setPartesSelecionadas((data.itens || []).map((item: any) => item.parteId));
+        }
+      }
     }
     fetchData();
   }, []);
@@ -164,39 +231,64 @@ export default function NovoOrcamentoPage() {
   // Salvar orçamento
   async function handleSalvar() {
     if (!clienteNome || !itens.length) return alert("Preencha os dados do cliente e adicione pelo menos um trabalho.");
-    
-    const orcamentoData: OrcamentoData = {
-      cliente: {
-        nome: clienteNome || "",
-        morada: clienteMorada || "",
-        nif: clienteNif || "",
-      },
-      data: new Date().toISOString(),
-      itens: itens.map(item => ({
-        parteId: item.parteId,
-        parteNome: partes.find(p => p.id === item.parteId)?.nome || item.parteId,
-        trabalhos: item.trabalhos.map(t => {
-          const original = trabalhos.find(tr => tr.id === t.trabalhoId);
-          return {
-            trabalhoId: t.trabalhoId,
-            nome: t.nome || "",
-            descricao: original?.descricao || "",
-            quantidade: t.quantidade || "0",
-            unidade: t.unidade || "unid",
-            valorUnitario: t.valorUnitario || "0",
-          };
-        })
-      })),
-      total: calcularTotal(itens),
-    };
-
-    await addDoc(collection(db, "orcamentos"), orcamentoData);
-    alert("Orçamento salvo!");
-    setClienteNome(""); 
-    setClienteMorada(""); 
-    setClienteNif(""); 
-    setPartesSelecionadas([]); 
-    setItens([]);
+    if (orcamentoId) {
+      // Atualizar orçamento existente
+      const orcamentoData: Partial<OrcamentoData> = {
+        cliente: {
+          nome: clienteNome || "",
+          morada: clienteMorada || "",
+          nif: clienteNif || "",
+        },
+        itens: itens.map(item => ({
+          parteId: item.parteId,
+          parteNome: partes.find(p => p.id === item.parteId)?.nome || item.parteId,
+          trabalhos: item.trabalhos.map(t => {
+            const original = trabalhos.find(tr => tr.id === t.trabalhoId);
+            return {
+              trabalhoId: t.trabalhoId,
+              nome: t.nome || "",
+              descricao: original?.descricao || "",
+              quantidade: t.quantidade || "0",
+              unidade: t.unidade || "unid",
+              valorUnitario: t.valorUnitario || "0",
+            };
+          })
+        })),
+        total: calcularTotal(itens),
+      };
+      await updateDoc(doc(db, "orcamentos", orcamentoId), orcamentoData);
+      router.push("/orcamentos");
+    } else {
+      // Novo orçamento
+      const numeroOrcamento = await gerarNumeroOrcamento();
+      const orcamentoData: OrcamentoData = {
+        numero: numeroOrcamento,
+        cliente: {
+          nome: clienteNome || "",
+          morada: clienteMorada || "",
+          nif: clienteNif || "",
+        },
+        data: new Date().toISOString(),
+        itens: itens.map(item => ({
+          parteId: item.parteId,
+          parteNome: partes.find(p => p.id === item.parteId)?.nome || item.parteId,
+          trabalhos: item.trabalhos.map(t => {
+            const original = trabalhos.find(tr => tr.id === t.trabalhoId);
+            return {
+              trabalhoId: t.trabalhoId,
+              nome: t.nome || "",
+              descricao: original?.descricao || "",
+              quantidade: t.quantidade || "0",
+              unidade: t.unidade || "unid",
+              valorUnitario: t.valorUnitario || "0",
+            };
+          })
+        })),
+        total: calcularTotal(itens),
+      };
+      await addDoc(collection(db, "orcamentos"), orcamentoData);
+      router.push("/orcamentos");
+    }
   }
 
   return (
@@ -228,7 +320,7 @@ export default function NovoOrcamentoPage() {
             <div className="flex flex-wrap gap-2 mb-2">
               {trabalhos.filter(t => t.parte_processo_id === parteId).map(trabalho => {
                 const selecionado = !!itens.find(item => item.parteId === parteId && item.trabalhos.find(t => t.trabalhoId === trabalho.id));
-                const label = trabalho.descricao?.trim() ? trabalho.descricao.slice(0, 30) + (trabalho.descricao.length > 30 ? '...' : '') : 'Trabalho sem nome';
+                const label = trabalho.descricao?.trim() ? trabalho.descricao.slice(0, 70) + (trabalho.descricao.length > 70 ? '...' : '') : 'Trabalho sem nome';
                 return (
                   <button
                     key={trabalho.id}
@@ -239,7 +331,7 @@ export default function NovoOrcamentoPage() {
                   >
                     <span className="truncate w-full">{label}</span>
                     {trabalho.descricao && (!trabalho.nome || trabalho.nome.trim() === '') && (
-                      <span className="text-[10px] text-zinc-300 w-full truncate">{trabalho.descricao.slice(0, 40)}{trabalho.descricao.length > 40 ? '...' : ''}</span>
+                      <span className="text-[10px] text-zinc-300 w-full truncate">{trabalho.descricao.slice(0, 70)}{trabalho.descricao.length > 70 ? '...' : ''}</span>
                     )}
                   </button>
                 );
@@ -269,7 +361,7 @@ export default function NovoOrcamentoPage() {
                       <input type="text" value={t.unidade} onChange={e => updateTrabalho(parteId, t.trabalhoId, "unidade", e.target.value)} className="w-16 border border-zinc-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
                       <input type="text" value={t.valorUnitario} onChange={e => updateTrabalho(parteId, t.trabalhoId, "valorUnitario", e.target.value.replace(/[^\d.]/g, ''))} className="w-24 border border-zinc-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Valor unitário" />
                       <span className="text-xs">Total: {Number(t.quantidade) * Number(t.valorUnitario)}</span>
-                      <button type="button" className="text-red-600 ml-2 hover:underline cursor-pointer" onClick={() => removeTrabalho(parteId, t.trabalhoId)}>Remover</button>
+                      <button type="button" className="bg-red-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-700 transition-colors cursor-pointer shadow-sm ml-2" onClick={() => removeTrabalho(parteId, t.trabalhoId)}>Excluir</button>
                     </div>
                   </li>
                 );
@@ -330,6 +422,7 @@ export default function NovoOrcamentoPage() {
         {itens.length > 0 && clienteNome ? (
           <PDFDownloadLink
             document={<OrcamentoPDF orcamento={{
+              numero: "TEMP",
               cliente: { nome: clienteNome, morada: clienteMorada, nif: clienteNif },
               data: new Date().toISOString(),
               itens: itens.map(item => ({

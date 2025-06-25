@@ -91,7 +91,7 @@ export default function TrabalhosPage() {
           className="w-full border rounded px-3 py-2"
         />
         <div className="flex gap-2 mb-2">
-          {['unid', 'm2', '"'].map((op) => (
+          {['unid', 'm2', 'ml', '"'].map((op) => (
             <button
               type="button"
               key={op}
@@ -127,8 +127,8 @@ export default function TrabalhosPage() {
                   Parte: {partes.find(p => p.id === trabalho.parte_processo_id)?.nome || "-"} | Unidade: {trabalho.unidade} | Qtd. padrão: {trabalho.quantidade_padrao}
                 </div>
               </div>
-              <button type="button" className="text-red-600 hover:underline cursor-pointer ml-4" onClick={() => handleRemoverTrabalho(trabalho.id)}>
-                Remover
+              <button type="button" className="bg-red-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-700 transition-colors cursor-pointer shadow-sm ml-4" onClick={() => handleRemoverTrabalho(trabalho.id)}>
+                Excluir
               </button>
             </li>
           ))}

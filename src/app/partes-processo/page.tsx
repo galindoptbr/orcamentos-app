@@ -73,8 +73,8 @@ export default function PartesProcessoPage() {
                 <span className="font-medium">{parte.nome}</span>
                 {parte.descricao && <div className="text-sm text-gray-600">{parte.descricao}</div>}
               </div>
-              <button type="button" className="text-red-600 hover:underline cursor-pointer ml-4" onClick={() => handleRemoverParte(parte.id)}>
-                Remover
+              <button type="button" className="bg-red-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-700 transition-colors cursor-pointer shadow-sm ml-4" onClick={() => handleRemoverParte(parte.id)}>
+                Excluir
               </button>
             </li>
           ))}

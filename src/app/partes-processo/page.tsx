@@ -60,7 +60,7 @@ export default function PartesProcessoPage() {
           onChange={e => setDescricao(e.target.value)}
           className="w-full border rounded px-3 py-2"
         />
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button>
+        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer">Salvar</button>
       </form>
       <h2 className="text-xl font-semibold mb-2">Cadastradas</h2>
       {loading ? (

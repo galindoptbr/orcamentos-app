@@ -110,7 +110,7 @@ export default function TrabalhosPage() {
           className="w-full border rounded px-3 py-2"
           min={1}
         />
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded" disabled={salvando}>
+        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded cursor-pointer" disabled={salvando}>
           {salvando ? "Salvando..." : "Salvar"}
         </button>
       </form>

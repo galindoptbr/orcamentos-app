@@ -128,6 +128,14 @@ const styles = StyleSheet.create({
     minWidth: 200,
     textAlign: "left",
   },
+  qtdCell: {
+    width: 60,
+    textAlign: "center",
+  },
+  unidCell: {
+    width: 50,
+    textAlign: "center",
+  },
   totalCell: {
     width: 80,
     textAlign: "center",
@@ -227,6 +235,8 @@ export function OrcamentoPDF({ orcamento }: { orcamento: Orcamento }) {
           <View style={[styles.tableRow, styles.tableHeader]}>
             <Text style={[styles.tableCell, styles.itemCell]}>ITEM</Text>
             <Text style={[styles.tableCell, styles.descCell]}>DESIGNAÇÃO DOS TRABALHOS</Text>
+            <Text style={[styles.tableCell, styles.qtdCell]}>QUANT.</Text>
+            <Text style={[styles.tableCell, styles.unidCell]}>UNID.</Text>
             <Text style={[styles.tableCell, styles.totalCell]}>TOTAL</Text>
           </View>
           {orcamento.itens.map((item, idx) => {
@@ -248,6 +258,8 @@ export function OrcamentoPDF({ orcamento }: { orcamento: Orcamento }) {
                     <View style={[styles.tableCell, styles.descCell, { flexDirection: "column" }]}> 
                       <Text>{t.descricao?.trim() ? t.descricao : "Trabalho sem nome"}</Text>
                     </View>
+                    <Text style={[styles.tableCell, styles.qtdCell]}>{t.quantidade}</Text>
+                    <Text style={[styles.tableCell, styles.unidCell]}>{t.unidade}</Text>
                     <Text style={[styles.tableCell, styles.totalCell]}></Text>
                   </View>
                 ))}
@@ -258,6 +270,8 @@ export function OrcamentoPDF({ orcamento }: { orcamento: Orcamento }) {
                 ]}> 
                   <Text style={[styles.tableCell, styles.itemCell]}></Text>
                   <Text style={[styles.tableCell, styles.descCell, { fontWeight: "bold" }]}>Total {item.parteNome}</Text>
+                  <Text style={[styles.tableCell, styles.qtdCell, { fontWeight: "bold" }]}></Text>
+                  <Text style={[styles.tableCell, styles.unidCell, { fontWeight: "bold" }]}></Text>
                   <Text style={[styles.tableCell, styles.totalCell, { fontWeight: "bold" }]}>{totalParte.toFixed(2)}</Text>
                 </View>
               </React.Fragment>

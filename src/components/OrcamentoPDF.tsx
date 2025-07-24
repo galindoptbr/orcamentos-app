@@ -117,6 +117,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     minHeight: 18,
     justifyContent: "center",
+    wordBreak: "break-all",
   },
   itemCell: {
     width: 40,
@@ -124,12 +125,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   descCell: {
-    flexGrow: 1,
-    minWidth: 200,
+    width: 350,
     textAlign: "left",
+    wordBreak: "break-all",
   },
   qtdCell: {
-    width: 60,
+    width: 50,
     textAlign: "center",
   },
   unidCell: {
@@ -137,9 +138,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   totalCell: {
-    width: 80,
-    textAlign: "center",
+    width: 50,
+    textAlign: "right",
     fontWeight: "bold",
+    borderRightWidth: 0,
   },
   sectionTitle: {
     backgroundColor: "#ffd600",
@@ -255,9 +257,7 @@ export function OrcamentoPDF({ orcamento }: { orcamento: Orcamento }) {
                 {item.trabalhos.map((t: Trabalho, i: number) => (
                   <View style={[styles.tableRow, { marginBottom: 0, paddingBottom: 0 }]} key={t.trabalhoId + i}>
                     <Text style={[styles.tableCell, styles.itemCell]}>{`${idx + 1}.${i + 1}`}</Text>
-                    <View style={[styles.tableCell, styles.descCell, { flexDirection: "column" }]}> 
-                      <Text>{t.descricao?.trim() ? t.descricao : "Trabalho sem nome"}</Text>
-                    </View>
+                    <Text style={[styles.tableCell, styles.descCell]}>{t.descricao?.trim() ? t.descricao : "Trabalho sem nome"}</Text>
                     <Text style={[styles.tableCell, styles.qtdCell]}>{t.quantidade}</Text>
                     <Text style={[styles.tableCell, styles.unidCell]}>{t.unidade}</Text>
                     <Text style={[styles.tableCell, styles.totalCell]}></Text>
